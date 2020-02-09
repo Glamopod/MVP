@@ -13,4 +13,6 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    // https://mvnrepository.com/artifact/org.tensorflow/tensorflow
+    compile group: 'org.tensorflow', name: 'tensorflow', version: '1.15.0'
 }
