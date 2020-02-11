@@ -24,13 +24,13 @@ public class NeuralNetworkStockPredictor {
     private double min = Double.MAX_VALUE;
     private String rawDataFilePath;
 
-    private String learningDataFilePath = "input/learningData.csv";
+    private String learningDataFilePath = NeuralNetworkStockPredictor.class.getResource("input/").getPath() + "learningData.csv";
     private String neuralNetworkModelFilePath = "stockPredictor.nnet";
 
     public static void main(String[] args) throws IOException {
 
         NeuralNetworkStockPredictor predictor = new NeuralNetworkStockPredictor(
-                5, "input/rawTrainingData.csv");
+                5, NeuralNetworkStockPredictor.class.getResource("input/rawTrainingData.csv").getPath());
         predictor.prepareData();
 
         System.out.println("Training starting");
