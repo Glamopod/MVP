@@ -1,16 +1,111 @@
-plugins {
-    id 'java'
+buildscript {
+    ext {
+        springBootVersion = '2.0.0.RELEASE'
+    }
+    repositories {
+        maven { url "http://repo.spring.io/libs-milestone" }
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("io.spring.gradle:dependency-management-plugin:0.5.1.RELEASE")
+    }
 }
 
-group 'org.example'
-version '1.0-SNAPSHOT'
+//plugins {
+//    id "io.spring.dependency-management" version "1.0.5.RELEASE"
+//}
 
+apply plugin: 'java'
+apply plugin: 'eclipse-wtp'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'war'
+
+
+war {
+    baseName = 'springboot'
+    version = '0.0.1-SNAPSHOT'
+}
 sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    maven { url "http://repo.spring.io/libs-milestone" }
 }
 
+configurations {
+    providedRuntime
+}
+
+dependencies {
+//  compile("org.springframework.boot:spring-boot-starter-data-jpa")
+//  compile("javax.servlet:jstl:1.2")
+//  runtime("mysql:mysql-connector-java")
+//  compile("org.springframework.boot:spring-boot-starter-jdbc")
+    compile ("org.springframework.boot:spring-boot-starter-web")
+    providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
+    //providedRuntime 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-thymeleaf
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: '2.2.5.RELEASE'
+
+}
+
+
+//eclipse {
+//    classpath {
+//         containers.remove('org.eclipse.jdt.launching.JRE_CONTAINER')
+//         containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
+//    }
+//}
+
+//task wrapper2(type: Wrapper) {
+//    gradleVersion = '2.3'
+//}
+
+
+
+
+//plugins {
+//    id 'org.springframework.boot' version '2.3.0.M2'
+//    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+//    id 'java'
+//}
+//
+//group = 'de.dsimon'
+//version = '0.0.1-SNAPSHOT'
+//sourceCompatibility = '11'
+//
+//configurations {
+//    developmentOnly
+//    runtimeClasspath {
+//        extendsFrom developmentOnly
+//    }
+//    compileOnly {
+//        extendsFrom annotationProcessor
+//    }
+//}
+//
+//repositories {
+//    mavenCentral()
+//    maven { url 'https://repo.spring.io/milestone' }
+//}
+//
+//dependencies {
+//    implementation 'org.springframework.boot:spring-boot-starter-security'
+//    implementation 'org.springframework.boot:spring-boot-starter-web'
+//    compileOnly 'org.projectlombok:lombok'
+//    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+//    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+//    annotationProcessor 'org.projectlombok:lombok'
+//    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+//        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+//    }
+//    testImplementation 'org.springframework.security:spring-security-test'
+//}
+//
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     // https://mvnrepository.com/artifact/org.tensorflow/tensorflow
@@ -18,3 +113,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.beykery/neuroph
     compile group: 'org.beykery', name: 'neuroph', version: '2.92'
 }
+//
+//test {
+//    useJUnitPlatform()
+//}
