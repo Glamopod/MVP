@@ -47,9 +47,11 @@ dependencies {
 //  compile("org.springframework.boot:spring-boot-starter-jdbc")
     compile ("org.springframework.boot:spring-boot-starter-web")
     providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
-    //providedRuntime 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    // Für JSP
+    providedRuntime 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    // Für HTML
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-thymeleaf
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: '2.2.5.RELEASE'
+//    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: '2.2.5.RELEASE'
 
 }
 
@@ -112,6 +114,8 @@ dependencies {
     compile group: 'org.tensorflow', name: 'tensorflow', version: '1.15.0'
     // https://mvnrepository.com/artifact/org.beykery/neuroph
     compile group: 'org.beykery', name: 'neuroph', version: '2.92'
+    // https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple
+    compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
 }
 //
 //test {

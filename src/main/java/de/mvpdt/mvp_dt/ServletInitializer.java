@@ -1,4 +1,4 @@
-package de.mvpdt.mvp_dt;//package com.ekiras;
+package de.mvpdt.mvp_dt;
 //
 //import org.springframework.boot.builder.SpringApplicationBuilder;
 //import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;

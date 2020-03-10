@@ -1,4 +1,4 @@
-package de.mvpdt.mvp_dt.Prediction;
+package de.mvpdt.mvp_dt.prediction;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -16,9 +16,6 @@ import org.neuroph.core.learning.SupervisedLearning;
 import org.neuroph.nnet.MultiLayerPerceptron;
 import org.neuroph.nnet.learning.BackPropagation;
 
-/**
- * @see <a href="http://technobium.com/stock-market-prediction-using-neuroph-neural-networks/"></a>
- */
 public class NeuralNetworkStockPredictor {
 
     private int slidingWindowSize;
@@ -26,21 +23,8 @@ public class NeuralNetworkStockPredictor {
     private double min = Double.MAX_VALUE;
     private String rawDataFilePath;
 
-    private String learningDataFilePath = NeuralNetworkStockPredictor.class.getResource("input/").getPath() + "learningData.csv";
+    private String learningDataFilePath = NeuralNetworkStockPredictor.class.getResource("/input/").getPath() + "learningData.csv";
     private String neuralNetworkModelFilePath = "stockPredictor.nnet";
-
-    public static void main(String[] args) throws IOException {
-
-        NeuralNetworkStockPredictor predictor = new NeuralNetworkStockPredictor(
-                5, NeuralNetworkStockPredictor.class.getResource("input/rawTrainingData.csv").getPath());
-        predictor.prepareData();
-
-        System.out.println("Training starting");
-        predictor.trainNetwork();
-
-        System.out.println("Testing network");
-        predictor.testNetwork();
-    }
 
     public NeuralNetworkStockPredictor(int slidingWindowSize,
                                        String rawDataFilePath) {
@@ -48,7 +32,7 @@ public class NeuralNetworkStockPredictor {
         this.slidingWindowSize = slidingWindowSize;
     }
 
-    void prepareData() throws IOException {
+    public void prepareData() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(
                 rawDataFilePath));
         // Find the minimum and maximum values - needed for normalization
@@ -106,7 +90,7 @@ public class NeuralNetworkStockPredictor {
         return min + (input - 0.1) * (max - min) / 0.8;
     }
 
-    void trainNetwork() throws IOException {
+    public void trainNetwork() throws IOException {
         NeuralNetwork<BackPropagation> neuralNetwork = new MultiLayerPerceptron(
                 slidingWindowSize, 2 * slidingWindowSize + 1, 1);
 
@@ -155,7 +139,7 @@ public class NeuralNetworkStockPredictor {
         return trainingSet;
     }
 
-    void testNetwork() {
+    public void testNetwork() {
         NeuralNetwork neuralNetwork = NeuralNetwork
                 .createFromFile(neuralNetworkModelFilePath);
         neuralNetwork.setInput(normalizeValue(2056.15),
