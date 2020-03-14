@@ -9,9 +9,13 @@ public class StandaloneApplication {
 
         NeuralNetworkStockPredictor predictor = new NeuralNetworkStockPredictor(
                 5, StandaloneApplication.class
-                .getResource("/input/rawTrainingData.csv")
+                .getResource("/input/USDJPY_202003120000_202003132142.csv")
                 .getPath());
-        predictor.prepareData();
+        // 2 for BID
+        // 3 for ASK
+        // 4 for LAST
+        // 5 for VOLUME
+        predictor.prepareData(2);
 
         System.out.println("Training starting");
         predictor.trainNetwork();
