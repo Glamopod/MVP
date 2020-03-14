@@ -173,6 +173,7 @@ public class NeuralNetworkStockPredictor {
                 double expectedValue[] = new double[] { Double
                         .valueOf(tokens[slidingWindowSize]) };
                 trainingSet.addRow(new DataSetRow(trainValues, expectedValue));
+                System.out.println("Load Taining Expected Value: " + expectedValue[0]+ "  trainValue:" + trainValues[0]);
             }
         } finally {
             reader.close();
