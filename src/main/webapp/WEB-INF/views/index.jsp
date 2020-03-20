@@ -11,7 +11,7 @@
 
             var dps = [];
 
-            var chart = new CanvasJS.Chart("chartContainer", {
+            var chart = new CanvasJS.Chart("chartContainer1", {
                 animationEnabled: true,
                 exportEnabled: true,
                 zoomEnabled: true,
@@ -52,9 +52,55 @@
 
         }
     </script>
+    <script type="text/javascript">
+    window.onload = function() {
+
+    var dataPoints = [];
+    var y = 50;
+    for(var i = 0; i < 10; i++){
+    	y += (Math.random() - 0.5) * 0.1;
+    	dataPoints.push({x: i, y: y});
+    }
+
+    var chart = new CanvasJS.Chart("chartContainer2", {
+    	title: {
+    		text: "Prediction in %"
+    	},
+    	axisX:{
+    		title: "Time in second"
+    	},
+    	axisY:{
+    		includeZero: false,
+    		suffix: " %"
+    	},
+    	data: [{
+    		type: "line",
+    		yValueFormatString: "#,##0.0#",
+    		toolTipContent: "{y} %",
+    		dataPoints: dataPoints
+    	}]
+    });
+    chart.render();
+
+    var updateInterval = 1000;
+    setInterval(function () { updateChart() }, updateInterval);
+
+    var xValue = dataPoints.length;
+    var yValue = dataPoints[dataPoints.length - 1].y;
+
+    function updateChart() {
+    	yValue += (Math.random() - 0.5) * 0.5;
+    	dataPoints.push({ x: xValue, y: yValue });
+    	xValue++;
+    	chart.render();
+    };
+
+    }
+    </script>
 </head>
 <body>
-<div id="chartContainer" style="height: 370px; width: 100%;"></div>
+<div id="chartContainer1" style="height: 370px; width: 100%;"></div>
+<div id="chartContainer2" style="height: 370px; width: 100%;"></div>
 <script src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
 <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 </body>
