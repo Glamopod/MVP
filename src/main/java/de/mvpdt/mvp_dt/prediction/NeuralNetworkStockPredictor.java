@@ -1,9 +1,14 @@
 package de.mvpdt.mvp_dt.prediction;
 
 import java.io.*;
-import java.util.LinkedList;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Stream;
 
+import de.mvpdt.mvp_dt.exception.EmptyTokenException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.core.data.DataSetRow;
@@ -23,8 +28,13 @@ public class NeuralNetworkStockPredictor {
     private double min = Double.MAX_VALUE;
     private String rawDataFilePath;
 
-    private String learningDataFilePath = NeuralNetworkStockPredictor.class.getResource("/input/").getPath() + "learningData.csv";
+    private String learningDataFilePath = NeuralNetworkStockPredictor.class.getResource("/input/").getPath() + "learningData";
     private String neuralNetworkModelFilePath = "stockPredictor.nnet";
+
+    private Date dateAndTimeForPrediction;
+    private List<Double> normalizedValuesForPrediction = new LinkedList<>();
+    //private Map<Integer, Double> predictedValuePerRow = new HashMap<>();
+    private Map<Integer, LinkedList<Double>> lastSlidingWindowPerRowForPrediction = new HashMap<>();
 
     public NeuralNetworkStockPredictor(int slidingWindowSize,
                                        String rawDataFilePath) {
@@ -32,32 +42,40 @@ public class NeuralNetworkStockPredictor {
         this.slidingWindowSize = slidingWindowSize;
     }
 
-    public void prepareData(final int elementIndex) {
-        getMaxAndMin(elementIndex);
-        writePreparedDataIntoFile(elementIndex);
+    public void prepareData(final int ... elementIndex) {
+        for(int index : elementIndex) {
+            try {
+                getMaxAndMinForNormalization(index);
+                prepareDataAndWriteItIntoFile(index);
+            } catch (EmptyTokenException e) {
+                // ToDo: add log4j LOGGING
+                e.printStackTrace();
+            }
+        }
     }
 
-    private void getMaxAndMin(final int elementIndex) {
+    private void getMaxAndMinForNormalization(final int elementIndex) throws EmptyTokenException {
         // Find the minimum and maximum values - needed for normalization
         try (final BufferedReader reader = new BufferedReader(new FileReader(rawDataFilePath));){
             String line;
-            String lastBid = "";
+            String lastToken = "";
             while ((line = reader.readLine()) != null) {
                 if(!line.startsWith("<")) { // die Überschriftszeile soll nicht genommen werden
                     String[] tokens = line.split("\t");
-                    String bid = tokens[elementIndex];
-                    if (StringUtils.isEmpty(bid)) {
-                        bid = lastBid;
+                    String token = tokens[elementIndex];
+
+                    // if the current token is null take the previous one (from the last day)
+                    if (StringUtils.isEmpty(token)) {
+                        token = lastToken;
                     } else {
-                        lastBid = bid;
+                        lastToken = token;
+                        if(StringUtils.isBlank(lastToken)) {
+                            throw new EmptyTokenException("The first value cannot be null");
+                        }
                     }
-                    double crtValue = Double.parseDouble(bid);
-                    if (crtValue > max) {
-                        max = crtValue;
-                    }
-                    if (crtValue < min) {
-                        min = crtValue;
-                    }
+
+                    double currentValue = Double.parseDouble(token);
+                    setMaxAndMin(currentValue);
                 }
             }
         } catch (FileNotFoundException e) {
@@ -65,6 +83,48 @@ public class NeuralNetworkStockPredictor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void setMaxAndMin(double currentValue) {
+        if (currentValue > max) {
+            max = currentValue;
+        }
+        if (currentValue < min) {
+            min = currentValue;
+        }
+    }
+
+    private void getValuesForPrediction(final List<Double> allTokens) {
+        final int size = allTokens.size();
+        for(int i = 0; i < slidingWindowSize; i++) {
+            final int index = size - (slidingWindowSize - i);
+            final Double token = allTokens.get(index);
+            System.out.println("token for prediction = " + token);
+            normalizedValuesForPrediction.add(normalizeValue(token));
+        }
+    }
+
+    private void calculateDateAndTimeForPrediction(final List<Date> allDates) {
+        final Date lastDate = allDates.get(allDates.size() - 1);
+        dateAndTimeForPrediction = DateUtils.addMinutes(lastDate, 1);
+    }
+
+    private void saveAllDates(final String[] tokens, final List<Date> allDates) {
+        try {
+            String date = tokens[0];
+            String time = tokens[1];
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy.MM.dd hh:mm:ss", Locale.GERMAN);
+            formatter.setTimeZone(TimeZone.getTimeZone("Europe/Berlin"));
+            Date dateAndTime = formatter.parse(date + ' ' + time);
+            String formattedDateString = formatter.format(dateAndTime);
+            allDates.add(dateAndTime);
+        } catch(ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveAllValues(final double currentValue, final List<Double> allTokens) {
+        allTokens.add(currentValue);
     }
 
     /**
@@ -85,41 +145,73 @@ public class NeuralNetworkStockPredictor {
      *
      * @param elementIndex row index for BID, ASK, LAST or VOLUME
      */
-    private void writePreparedDataIntoFile(final int elementIndex) {
-        // Keep a queue with slidingWindowSize + 1 values
-        LinkedList<Double> valuesQueue = new LinkedList<Double>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(rawDataFilePath));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(learningDataFilePath))){
-            String line;
-            String lastBid = "";
-            while ((line = reader.readLine()) != null) {
-                if(!line.startsWith("<")) { // die Überschriftszeile soll nicht genommen werden
-                    String[] tokens = line.split("\t");
-                    String bid = tokens[elementIndex];
-                    if (StringUtils.isEmpty(bid)) {
-                        bid = lastBid;
-                    } else {
-                        lastBid = bid;
-                    }
-                    double crtValue = Double.parseDouble(bid);
-                    // Normalize values and add it to the queue
-                    double normalizedValue = normalizeValue(crtValue);
-                    valuesQueue.add(normalizedValue);
+    private void prepareDataAndWriteItIntoFile(final int ... elementIndex) throws EmptyTokenException {
+        for(int index : elementIndex) {
+            // Keep a queue with slidingWindowSize + 1 values
+            LinkedList<Double> valuesQueue = new LinkedList<Double>();
+            try (BufferedReader reader = new BufferedReader(new FileReader(rawDataFilePath));
+                 BufferedWriter writer = new BufferedWriter(new FileWriter(learningDataFilePath + index + ".csv"))) {
+                String line;
+                String lastBid = "";
+                List<Date> allDates = new LinkedList<>();
+                List<Double> allTokens = new LinkedList<>();
+                while ((line = reader.readLine()) != null) {
+                    if (!line.startsWith("<")) { // die Überschriftszeile soll nicht genommen werden
+                        String[] tokens = line.split("\t");
 
-                    if (valuesQueue.size() == slidingWindowSize + 1) {
-                        String valueLine = valuesQueue.toString().replaceAll(
-                                "\\[|\\]", "");
-                        writer.write(valueLine);
-                        writer.newLine();
-                        // Remove the first element in queue to make place for a new one
-                        valuesQueue.removeFirst();
+                        // Datum und Zeit auslesen und in einer Instanzveriablen abspeichern
+                        saveAllDates(tokens, allDates);
+
+                        String bid = tokens[index];
+
+//                    // if the current token is null take the previous one (from the last day)
+                        if (StringUtils.isEmpty(bid)) {
+                            bid = lastBid;
+                        } else {
+                            lastBid = bid;
+                            if (StringUtils.isBlank(lastBid)) {
+                                throw new EmptyTokenException("The first value cannot be null");
+                            }
+                        }
+
+                        double crtValue = Double.parseDouble(bid);
+                        // Normalize values and add it to the queue
+                        double normalizedValue = normalizeValue(crtValue);
+                        valuesQueue.add(normalizedValue);
+
+                        createAndWriteSlidingWindowOfValues(valuesQueue, writer, index);
+
+                        // saveAllValues(crtValue, allTokens);
                     }
                 }
+                calculateDateAndTimeForPrediction(allDates);
+                // getValuesForPrediction(allTokens);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        }
+    }
+
+    /**
+     * For training
+     * @param valuesQueue
+     * @param writer
+     * @param elementIndex
+     * @throws IOException
+     */
+    private void createAndWriteSlidingWindowOfValues(LinkedList<Double> valuesQueue, BufferedWriter writer, int elementIndex) throws IOException {
+        // ToDo: For loop for all indexes
+        if (valuesQueue.size() == slidingWindowSize + 1) {
+            String valueLine = valuesQueue.toString().replaceAll(
+                    "\\[|\\]", "");
+            writer.write(valueLine);
+            writer.newLine();
+            // for prediction
+            lastSlidingWindowPerRowForPrediction.put(elementIndex, valuesQueue);
+            // Remove the first element in queue to make place for a new one
+            valuesQueue.removeFirst();
         }
     }
 
@@ -131,7 +223,8 @@ public class NeuralNetworkStockPredictor {
         return min + (input - 0.1) * (max - min) / 0.8;
     }
 
-    public void trainNetwork() throws IOException {
+    public void trainNetwork(final int ... elementIndex) throws IOException {
+        // ToDo: For loop for all indexes
         NeuralNetwork<BackPropagation> neuralNetwork = new MultiLayerPerceptron(
                 slidingWindowSize, 2 * slidingWindowSize + 1, 1);
 
@@ -152,46 +245,53 @@ public class NeuralNetworkStockPredictor {
             }
         });
 
-        DataSet trainingSet = loadTraininigData(learningDataFilePath);
+        DataSet trainingSet = loadTraininigData(elementIndex);
         neuralNetwork.learn(trainingSet);
         neuralNetwork.save(neuralNetworkModelFilePath);
     }
 
-    DataSet loadTraininigData(String filePath) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(filePath));
+    DataSet loadTraininigData(int ... elementIndex) throws IOException {
         DataSet trainingSet = new DataSet(slidingWindowSize, 1);
+        for(int index : elementIndex) {
+            BufferedReader reader = new BufferedReader(new FileReader(learningDataFilePath + index + ".csv"));
 
-        try {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] tokens = line.split(",");
+            try {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] tokens = line.split(",");
 
-                double trainValues[] = new double[slidingWindowSize];
-                for (int i = 0; i < slidingWindowSize; i++) {
-                    trainValues[i] = Double.valueOf(tokens[i]);
+                    double trainValues[] = new double[slidingWindowSize];
+                    for (int i = 0; i < slidingWindowSize; i++) {
+                        trainValues[i] = Double.valueOf(tokens[i]);
+                    }
+                    double expectedValue[] = new double[]{Double
+                            .valueOf(tokens[slidingWindowSize])};
+                    trainingSet.addRow(new DataSetRow(trainValues, expectedValue));
+                    System.out.println("Index: " + index + " Load Taining Expected Value: " + expectedValue[0] + "  trainValue:" + trainValues[0]);
                 }
-                double expectedValue[] = new double[] { Double
-                        .valueOf(tokens[slidingWindowSize]) };
-                trainingSet.addRow(new DataSetRow(trainValues, expectedValue));
-                System.out.println("Load Taining Expected Value: " + expectedValue[0]+ "  trainValue:" + trainValues[0]);
+            } finally {
+                reader.close();
             }
-        } finally {
-            reader.close();
         }
         return trainingSet;
     }
 
-    public void testNetwork() {
+    public void testNetwork(final int ... elementIndex) {
         NeuralNetwork neuralNetwork = NeuralNetwork
                 .createFromFile(neuralNetworkModelFilePath);
-        neuralNetwork.setInput(normalizeValue(2056.15),
-                normalizeValue(2061.02), normalizeValue(2086.24),
-                normalizeValue(2067.89), normalizeValue(2059.69));
 
-        neuralNetwork.calculate();
-        double[] networkOutput = neuralNetwork.getOutput();
-        System.out.println("Expected value  : 2066.96");
-        System.out.println("Predicted value : "
-                + deNormalizeValue(networkOutput[0]));
+        for(int index : elementIndex) {
+            LinkedList<Double> normalizedValuesForPrediction = lastSlidingWindowPerRowForPrediction.get(index);
+            Double[] doubles = normalizedValuesForPrediction.toArray(new Double[this.normalizedValuesForPrediction.size()]);
+
+            neuralNetwork.setInput(Stream.of(doubles).mapToDouble(value -> value.doubleValue()).toArray());
+
+            neuralNetwork.calculate();
+            double[] networkOutput = neuralNetwork.getOutput();
+            System.out.println("Expected value  : 2066.96");
+            double predictedValue = deNormalizeValue(networkOutput[0]);
+            System.out.println("Index: " + index + " Predicted value : "
+                    + predictedValue);
+        }
     }
 }
