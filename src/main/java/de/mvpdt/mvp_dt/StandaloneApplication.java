@@ -1,26 +1,32 @@
 package de.mvpdt.mvp_dt;
 
 import de.mvpdt.mvp_dt.prediction.NeuralNetworkStockPredictor;
+import de.mvpdt.mvp_dt.service.TimeStampService;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 
 public class StandaloneApplication {
+
+    @Resource
+    private TimeStampService timeStampService;
+
     public static void main(String[] args) throws IOException {
 
         NeuralNetworkStockPredictor predictor = new NeuralNetworkStockPredictor(
                 5, StandaloneApplication.class
-                .getResource("/input/USDJPY_202003120000_202003132142.csv")
+                .getResource("/input/USDJPY_M1_202003190000_202003192016.csv")
                 .getPath());
-        // 2 for BID
-        // 3 for ASK
-        // 4 for LAST
-        // 5 for VOLUME
-        predictor.prepareData(2);
+        // 3 for HIGH
+        // 4 for LOW
+        // 5 for CLOSE
+        // 6 for TICKVOL
+        predictor.prepareData(3, 4);
 
         System.out.println("Training starting");
-        predictor.trainNetwork();
+        predictor.trainNetwork(3, 4);
 
         System.out.println("Testing network");
-        predictor.testNetwork();
+        predictor.testNetwork(3, 4);
     }
 }
