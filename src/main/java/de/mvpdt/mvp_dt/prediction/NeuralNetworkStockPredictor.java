@@ -288,9 +288,9 @@ public class NeuralNetworkStockPredictor {
 
             neuralNetwork.calculate();
             double[] networkOutput = neuralNetwork.getOutput();
-            System.out.println("Expected value  : 2066.96");
+            // System.out.println("Expected value  : 2066.96");
             double predictedValue = deNormalizeValue(networkOutput[0]);
-            System.out.println("Index: " + index + " Predicted value : "
+            System.out.println("Index: " + index + ", Predicted value : "
                     + predictedValue);
         }
     }

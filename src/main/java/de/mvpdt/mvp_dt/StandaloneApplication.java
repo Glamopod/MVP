@@ -21,12 +21,14 @@ public class StandaloneApplication {
         // 4 for LOW
         // 5 for CLOSE
         // 6 for TICKVOL
-        predictor.prepareData(3, 4);
+        final int[] elements = new int[]{2, 3, 4, 5};
+
+        predictor.prepareData(elements);
 
         System.out.println("Training starting");
-        predictor.trainNetwork(3, 4);
+        predictor.trainNetwork(elements);
 
         System.out.println("Testing network");
-        predictor.testNetwork(3, 4);
+        predictor.testNetwork(elements);
     }
 }
