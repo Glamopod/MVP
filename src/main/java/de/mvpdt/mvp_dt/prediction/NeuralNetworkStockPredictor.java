@@ -1,6 +1,7 @@
 package de.mvpdt.mvp_dt.prediction;
 
 import java.io.*;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -18,6 +19,7 @@ import org.neuroph.core.learning.SupervisedLearning;
 import org.neuroph.nnet.MultiLayerPerceptron;
 import org.neuroph.nnet.learning.BackPropagation;
 
+
 /**
  * https://technobium.com/stock-market-prediction-using-neuroph-neural-networks/
  */
@@ -29,6 +31,7 @@ public class NeuralNetworkStockPredictor {
     private String rawDataFilePath;
 
     private String learningDataFilePath = NeuralNetworkStockPredictor.class.getResource("/input/").getPath() + "learningData";
+    private String predictedFilePath = NeuralNetworkStockPredictor.class.getResource("/input/").getPath() + "predicted.csv";
     private String neuralNetworkModelFilePath = "stockPredictor.nnet";
 
     private Date dateAndTimeForPrediction;
@@ -208,7 +211,8 @@ public class NeuralNetworkStockPredictor {
                     "\\[|\\]", "");
             writer.write(valueLine);
             writer.newLine();
-            // for prediction
+            // put last sliding window of a file (last 5 values) with row index into this HashMap
+            // to use it for prediction in the method #testNetwork()
             lastSlidingWindowPerRowForPrediction.put(elementIndex, valuesQueue);
             // Remove the first element in queue to make place for a new one
             valuesQueue.removeFirst();
@@ -280,6 +284,9 @@ public class NeuralNetworkStockPredictor {
         NeuralNetwork neuralNetwork = NeuralNetwork
                 .createFromFile(neuralNetworkModelFilePath);
 
+        // max 4 values: <HIGH>	<LOW> <CLOSE> <TICKVOL>
+        final Map<Integer, Double> result = new HashMap<>(4);
+
         for(int index : elementIndex) {
             LinkedList<Double> normalizedValuesForPrediction = lastSlidingWindowPerRowForPrediction.get(index);
             Double[] doubles = normalizedValuesForPrediction.toArray(new Double[this.normalizedValuesForPrediction.size()]);
@@ -292,6 +299,30 @@ public class NeuralNetworkStockPredictor {
             double predictedValue = deNormalizeValue(networkOutput[0]);
             System.out.println("Index: " + index + ", Predicted value : "
                     + predictedValue);
+
+            result.put(index, predictedValue);
+        }
+
+        savePredictionResults(result);
+    }
+
+    private void savePredictionResults(Map<Integer, Double> result) {
+        String pattern = "yyyy.MM.dd\tHH:mm:ss";
+        // Create an instance of SimpleDateFormat used for formatting
+        // the string representation of date according to the chosen pattern
+        DateFormat df = new SimpleDateFormat(pattern);
+        // Using DateFormat format method we can create a string
+        // representation of a date with the defined format.
+        String dateAsString = df.format(dateAndTimeForPrediction);
+        final StringBuilder predicted = new StringBuilder(dateAsString);
+        result.forEach((key, value) -> predicted.append("\t" + value));
+        System.out.println("predicted = " + predicted);
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(predictedFilePath));
+            writer.write(predicted.toString());
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
