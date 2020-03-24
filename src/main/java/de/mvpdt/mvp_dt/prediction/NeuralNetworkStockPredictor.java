@@ -317,10 +317,8 @@ public class NeuralNetworkStockPredictor {
         final StringBuilder predicted = new StringBuilder(dateAsString);
         result.forEach((key, value) -> predicted.append("\t" + value));
         System.out.println("predicted = " + predicted);
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(predictedFilePath));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(predictedFilePath))) {
             writer.write(predicted.toString());
-            writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
