@@ -97,7 +97,9 @@ public class DataPreparationService {
     public void prepareRawDataForNeuralNetwork(final LinkedHashMap orderedRawDataFromFile) {
         final Set entrySet = orderedRawDataFromFile.entrySet();
         final Object[] objects = entrySet.toArray();
+        final LinkedList<Double> savedPortionOfRawValues = new LinkedList<>();
         for (Object o1 : objects) {
+            final LinkedList<Double> onePortionOfRawValues = new LinkedList<>();
             final Object columnIndex = ((Map.Entry) o1).getKey();
             final Object o2 = ((Map.Entry) o1).getValue();
             final Set entrySet2 = ((LinkedHashMap) o2).entrySet();
@@ -105,7 +107,7 @@ public class DataPreparationService {
             int firstPortionElement = 1;
             for (Object portion : objects1) {
                 int lastPortionElement = (Integer) ((Map.Entry) portion).getKey();
-                System.out.println("first portion element = " + firstPortionElement + ", last portion element = " + lastPortionElement);
+                // System.out.println("first portion element = " + firstPortionElement + ", last portion element = " + lastPortionElement);
                 firstPortionElement = lastPortionElement + 1;
                 final Object portionValue = ((Map.Entry) portion).getValue();
                 for (Object o3 : (LinkedList) portionValue) {
@@ -113,10 +115,27 @@ public class DataPreparationService {
                     final Object[] asArray = rowNumberAndTimeStampWithRowValue.toArray();
                     for (Object o4 : asArray) {
                         final Object rowNumber = ((Map.Entry) o4).getKey();
-                        System.out.println("columnIndex = " + columnIndex + ", rowNumber = " + rowNumber);
+                        // System.out.println("columnIndex = " + columnIndex + ", rowNumber = " + rowNumber);
                         final Object timeStampAndRawValue = ((Map.Entry) o4).getValue();
-                        System.out.println("timeStampAndRawValue = " + timeStampAndRawValue);
+                        // System.out.println("timeStampAndRawValue = " + timeStampAndRawValue);
+                        final Set entrySet3 = ((LinkedHashMap) timeStampAndRawValue).entrySet();
+                        final Object[] asArray1 = entrySet3.toArray();
+                        for (Object o5 : asArray1) {
+                            final Object timeStamp = ((Map.Entry) o5).getKey();
+                            final Object rawValue = ((Map.Entry) o5).getValue();
+                            onePortionOfRawValues.add((Double) rawValue);
+                        }
                     }
+                }
+                // System.out.println();
+                // onePortionOfRawValues zum antrainieren übergeben
+                // at this point onePortionOfRawValues contains max 1200 rawValues = max one complete column
+                try {
+                    final NetworkService networkService = new NetworkService();
+                    savedPortionOfRawValues.addAll(onePortionOfRawValues);
+                    networkService.trainNetwork(savedPortionOfRawValues);
+                } catch (IOException e) {
+                    e.printStackTrace(); // ToDo DSI: Exception handling
                 }
             }
         }
