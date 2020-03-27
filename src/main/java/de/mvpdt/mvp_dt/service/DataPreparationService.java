@@ -8,7 +8,10 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class DataPreparationService {
@@ -20,16 +23,16 @@ public class DataPreparationService {
      * amount of consumed raw data.
      *
      * @param rawDataFilePath path to the *.csv file with raw data
-     * @param amountOfRows in each portion of the raw data
-     * @param columnIndex of one or more columns
+     * @param amountOfRows    in each portion of the raw data
+     * @param columnIndex     of one or more columns
      * @return LinkedHashMap with a LinkedHashMap for each single raw data column
      * @throws EmptyTokenException when the first value in a column is null
      */
-    public LinkedHashMap prepareRawDataFromFile(final String rawDataFilePath, final int amountOfRows, final int ... columnIndex) throws EmptyTokenException{
+    public LinkedHashMap prepareRawDataFromFile(final String rawDataFilePath, final int amountOfRows, final int... columnIndex) throws EmptyTokenException {
         // return
         final LinkedHashMap<Integer, LinkedHashMap<Integer, LinkedList<LinkedHashMap<Integer, LinkedHashMap<String, Double>>>>> splitedRowNumberWithRawDataListWithIndex = new LinkedHashMap<>();
         //final LinkedList<LinkedHashMap<Integer, LinkedList<LinkedHashMap<Integer, LinkedHashMap<String, Double>>>>> splitedRowNumberWithRawDataListWithIndex = new LinkedList<>();
-        for(int index : columnIndex) {
+        for (int index : columnIndex) {
             try (BufferedReader reader = new BufferedReader(new FileReader(rawDataFilePath));) {
                 String line;
                 String lastToken = "";
@@ -62,7 +65,7 @@ public class DataPreparationService {
                         rawData.put(rowNumber, rawDataWithTimeString);
 
                         rowNumberWithRawDataList.add(rawData);
-                        if(rowNumber % amountOfRows == 0) {
+                        if (rowNumber % amountOfRows == 0) {
                             final LinkedList<LinkedHashMap<Integer, LinkedHashMap<String, Double>>> temp = new LinkedList<>();
                             temp.addAll(rowNumberWithRawDataList);
                             splitedRowNumberWithRawDataList.put(rowNumber, temp);
@@ -79,5 +82,43 @@ public class DataPreparationService {
             }
         }
         return splitedRowNumberWithRawDataListWithIndex;
+    }
+
+    public void testPreparedRawData(final LinkedHashMap orderedRawDataFromFile) {
+        // LinkedHashMap<Integer, LinkedHashMap<Integer, LinkedList<LinkedHashMap<Integer, LinkedHashMap<String, Double>>>>>
+        for (Object allColumnsAndAllRowsInGivenPortions : orderedRawDataFromFile.values())
+            for (Object allRowsForAllColumns : ((LinkedHashMap) allColumnsAndAllRowsInGivenPortions).values())
+                for (Object rowNumberAndTimeStampWithRawValue : ((LinkedList) allRowsForAllColumns))
+                    for (Object timeStampAndRawValue : ((LinkedHashMap) rowNumberAndTimeStampWithRawValue).values())
+                        for (Object rawValue : ((LinkedHashMap) timeStampAndRawValue).values())
+                            System.out.println(rawValue); // as Double
+    }
+
+    public void prepareRawDataForNeuralNetwork(final LinkedHashMap orderedRawDataFromFile) {
+        final Set entrySet = orderedRawDataFromFile.entrySet();
+        final Object[] objects = entrySet.toArray();
+        for (Object o1 : objects) {
+            final Object columnIndex = ((Map.Entry) o1).getKey();
+            final Object o2 = ((Map.Entry) o1).getValue();
+            final Set entrySet2 = ((LinkedHashMap) o2).entrySet();
+            final Object[] objects1 = entrySet2.toArray();
+            int firstPortionElement = 1;
+            for (Object portion : objects1) {
+                int lastPortionElement = (Integer) ((Map.Entry) portion).getKey();
+                System.out.println("first portion element = " + firstPortionElement + ", last portion element = " + lastPortionElement);
+                firstPortionElement = lastPortionElement + 1;
+                final Object portionValue = ((Map.Entry) portion).getValue();
+                for (Object o3 : (LinkedList) portionValue) {
+                    final Set rowNumberAndTimeStampWithRowValue = ((LinkedHashMap) o3).entrySet();
+                    final Object[] asArray = rowNumberAndTimeStampWithRowValue.toArray();
+                    for (Object o4 : asArray) {
+                        final Object rowNumber = ((Map.Entry) o4).getKey();
+                        System.out.println("columnIndex = " + columnIndex + ", rowNumber = " + rowNumber);
+                        final Object timeStampAndRawValue = ((Map.Entry) o4).getValue();
+                        System.out.println("timeStampAndRawValue = " + timeStampAndRawValue);
+                    }
+                }
+            }
+        }
     }
 }
