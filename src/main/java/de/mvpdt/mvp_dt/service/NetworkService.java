@@ -23,26 +23,27 @@ public class NetworkService {
     private double min = Double.MAX_VALUE;
 
     public void trainNetwork(final LinkedList<Double> rawValuesList) throws IOException {
-        // ToDo: For loop for all indexes
-        NeuralNetwork<BackPropagation> neuralNetwork = new MultiLayerPerceptron(
-                slidingWindowSize, 2 * slidingWindowSize + 1, 1);
+        NeuralNetwork<BackPropagation> neuralNetwork = new MultiLayerPerceptron( // new NN
+                slidingWindowSize, 2 * slidingWindowSize + 1, 1); // new NN
+//        NeuralNetwork neuralNetwork = NeuralNetwork // load existing NN
+//                .createFromFile(neuralNetworkModelFilePath); // load existing NN
 
         int maxIterations = 1000;
         double learningRate = 0.5;
         double maxError = 0.00001;
-        SupervisedLearning learningRule = neuralNetwork.getLearningRule();
-        learningRule.setMaxError(maxError);
-        learningRule.setLearningRate(learningRate);
-        learningRule.setMaxIterations(maxIterations);
-        learningRule.addListener(new LearningEventListener() {
-            public void handleLearningEvent(LearningEvent learningEvent) {
-                SupervisedLearning rule = (SupervisedLearning) learningEvent
-                        .getSource();
-                // System.out.println("Network error for interation "
-                //         + rule.getCurrentIteration() + ": "
-                //         + rule.getTotalNetworkError());
-            }
-        });
+        SupervisedLearning learningRule = neuralNetwork.getLearningRule(); // new NN
+        learningRule.setMaxError(maxError); // new NN
+        learningRule.setLearningRate(learningRate); // new NN
+        learningRule.setMaxIterations(maxIterations); // new NN
+        learningRule.addListener(new LearningEventListener() { // new NN
+            public void handleLearningEvent(LearningEvent learningEvent) { // new NN
+                SupervisedLearning rule = (SupervisedLearning) learningEvent // new NN
+                        .getSource(); // new NN
+// DO NOT USE                System.out.println("Network error for interation " // new NN
+// DO NOT USE                        + rule.getCurrentIteration() + ": " // new NN
+// DO NOT USE                        + rule.getTotalNetworkError()); // new NN
+            } // new NN
+        }); // new NN
 
         final DataSet trainingSet = createTrainingData(rawValuesList);
         System.out.println("Rows in the training set = " + trainingSet.getRows().size());

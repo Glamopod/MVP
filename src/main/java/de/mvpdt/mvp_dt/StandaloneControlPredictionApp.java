@@ -12,7 +12,9 @@ public class StandaloneControlPredictionApp {
         DataPreparationService dataPreparationService = new DataPreparationService();
         LinkedHashMap orderedRawDataFromFile = dataPreparationService
                 .prepareRawDataFromFile(StandaloneControlPredictionApp.class
+//                        .getResource("/input/testStockPrediction.csv")
                         .getResource("/input/USDJPY_M1_202003190000_202003192016.csv")
+//                        .getPath(), 60, 2);
                         .getPath(), 60, 2, 3, 4, 5);
 
         // dataPreparationService.testPreparedRawData(orderedRawDataFromFile);
