@@ -44,7 +44,10 @@ public class DataPreparationService {
                         rowNumber++;
                         String[] tokens = line.split("\t");
                         String dataAndTime = tokens[0] + " " + tokens[1];
-                        String token = tokens[index];
+                        String token = null;
+                        try {
+                            token = tokens[index];
+
 
                         // if the current token is null take the previous one (from the last day)
                         if (StringUtils.isEmpty(token)) {
@@ -71,6 +74,9 @@ public class DataPreparationService {
                             splitedRowNumberWithRawDataList.put(rowNumber, temp);
                             rowNumberWithRawDataList.clear();
                         }
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            System.err.println("The test file has less column then expected! Fix amount of columns in StandaloneControlPredictionApp!");
+                        }
                     }
                 }
                 //splitedRowNumberWithRawDataListWithIndex.add(splitedRowNumberWithRawDataList);
@@ -94,7 +100,7 @@ public class DataPreparationService {
                             System.out.println(rawValue); // as Double
     }
 
-    public void prepareRawDataForNeuralNetwork(final LinkedHashMap orderedRawDataFromFile) {
+    public void prepareRawDataForNeuralNetwork(final LinkedHashMap orderedRawDataFromFile, final int slidingWindowSize, final boolean createNewNN) {
         final Set entrySet = orderedRawDataFromFile.entrySet();
         final Object[] objects = entrySet.toArray();
         final LinkedList<Double> savedPortionOfRawValues = new LinkedList<>();
@@ -133,7 +139,7 @@ public class DataPreparationService {
                 try {
                     final NetworkService networkService = new NetworkService();
                     savedPortionOfRawValues.addAll(onePortionOfRawValues);
-                    networkService.trainNetwork(savedPortionOfRawValues);
+                    networkService.trainNetwork(savedPortionOfRawValues, slidingWindowSize, createNewNN);
                 } catch (IOException e) {
                     e.printStackTrace(); // ToDo DSI: Exception handling
                 }

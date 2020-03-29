@@ -11,9 +11,9 @@ import org.neuroph.nnet.learning.BackPropagation;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.LinkedList;
-import java.util.Map;
 
 @Service
 public class NetworkService {
@@ -22,28 +22,9 @@ public class NetworkService {
     private double max = 0;
     private double min = Double.MAX_VALUE;
 
-    public void trainNetwork(final LinkedList<Double> rawValuesList) throws IOException {
-        NeuralNetwork<BackPropagation> neuralNetwork = new MultiLayerPerceptron( // new NN
-                slidingWindowSize, 2 * slidingWindowSize + 1, 1); // new NN
-//        NeuralNetwork neuralNetwork = NeuralNetwork // load existing NN
-//                .createFromFile(neuralNetworkModelFilePath); // load existing NN
-
-        int maxIterations = 1000;
-        double learningRate = 0.5;
-        double maxError = 0.00001;
-        SupervisedLearning learningRule = neuralNetwork.getLearningRule(); // new NN
-        learningRule.setMaxError(maxError); // new NN
-        learningRule.setLearningRate(learningRate); // new NN
-        learningRule.setMaxIterations(maxIterations); // new NN
-        learningRule.addListener(new LearningEventListener() { // new NN
-            public void handleLearningEvent(LearningEvent learningEvent) { // new NN
-                SupervisedLearning rule = (SupervisedLearning) learningEvent // new NN
-                        .getSource(); // new NN
-// DO NOT USE                System.out.println("Network error for interation " // new NN
-// DO NOT USE                        + rule.getCurrentIteration() + ": " // new NN
-// DO NOT USE                        + rule.getTotalNetworkError()); // new NN
-            } // new NN
-        }); // new NN
+    public void trainNetwork(final LinkedList<Double> rawValuesList, int slidingWindowSize, final boolean createNewNN) throws IOException {
+        this.slidingWindowSize = slidingWindowSize;
+        NeuralNetwork<BackPropagation> neuralNetwork = createOrLoadNN(createNewNN);
 
         final DataSet trainingSet = createTrainingData(rawValuesList);
         System.out.println("Rows in the training set = " + trainingSet.getRows().size());
@@ -57,6 +38,41 @@ public class NetworkService {
 
 //      System.out.println(trainingSet.getRows().toString().replace(",", "\n"));
         System.out.println();
+    }
+
+    private NeuralNetwork<BackPropagation> createOrLoadNN(boolean createNewNN) {
+        NeuralNetwork<BackPropagation> neuralNetwork = null;
+        if (createNewNN) {
+            try {
+                Files.deleteIfExists(Paths.get(neuralNetworkModelFilePath));
+            } catch (IOException e) {
+                System.err.println("Error while removing existing NN");
+                e.printStackTrace();
+            }
+            neuralNetwork = new MultiLayerPerceptron( // new NN
+                    slidingWindowSize, 2 * slidingWindowSize + 1, 1); // new NN
+
+            int maxIterations = 1000;
+            double learningRate = 0.5;
+            double maxError = 0.00001;
+            SupervisedLearning learningRule = neuralNetwork.getLearningRule(); // new NN
+            learningRule.setMaxError(maxError); // new NN
+            learningRule.setLearningRate(learningRate); // new NN
+            learningRule.setMaxIterations(maxIterations); // new NN
+            learningRule.addListener(new LearningEventListener() { // new NN
+                public void handleLearningEvent(LearningEvent learningEvent) { // new NN
+                    SupervisedLearning rule = (SupervisedLearning) learningEvent // new NN
+                            .getSource(); // new NN
+// DO NOT USE                System.out.println("Network error for interation " // new NN
+// DO NOT USE                        + rule.getCurrentIteration() + ": " // new NN
+// DO NOT USE                        + rule.getTotalNetworkError()); // new NN
+                } // new NN
+            }); // new NN
+        } else {
+            neuralNetwork = NeuralNetwork // load existing NN
+                    .createFromFile(neuralNetworkModelFilePath); // load existing NN
+        }
+        return neuralNetwork;
     }
 
     private void setMaxAndMin(final LinkedList<Double> rawValuesList) {
