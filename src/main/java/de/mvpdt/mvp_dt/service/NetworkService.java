@@ -18,7 +18,7 @@ import java.util.LinkedList;
 @Service
 public class NetworkService {
     private String neuralNetworkModelFilePath = "stockPredictor.nnet";
-    private int slidingWindowSize = 5;
+    private int slidingWindowSize = 3;
     private double max = 0;
     private double min = Double.MAX_VALUE;
 
@@ -49,12 +49,18 @@ public class NetworkService {
                 System.err.println("Error while removing existing NN");
                 e.printStackTrace();
             }
+            //The number of hidden neurons should be between the size of the input layer and the size of the output layer.
+            // The number of hidden neurons should be 2/3 the size of the input layer, plus the size of the output layer.
+            // The number of hidden neurons should be less than twice the size of the input layer.Jun 1, 2017
             neuralNetwork = new MultiLayerPerceptron( // new NN
-                    slidingWindowSize, 2 * slidingWindowSize + 1, 1); // new NN
+                    slidingWindowSize,
+                    2*(slidingWindowSize*(2/3)+1),
+                    2*(slidingWindowSize*(3/3)+1),
+                    1); // new NN
 
-            int maxIterations = 1000;
-            double learningRate = 0.5;
-            double maxError = 0.00001;
+            int maxIterations = 10000;
+            double learningRate =0.5;
+            double maxError = 0.000000000001;
             SupervisedLearning learningRule = neuralNetwork.getLearningRule(); // new NN
             learningRule.setMaxError(maxError); // new NN
             learningRule.setLearningRate(learningRate); // new NN
